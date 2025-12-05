@@ -1,11 +1,14 @@
 import React, { useState, useRef } from "react";
 import { useSelector } from "react-redux";
-import { updateUserStart, updateUserSuccess, updateUserFailure } from "../redux/user/userSlice";
+import { updateUserStart, updateUserSuccess, updateUserFailure,deleteUserFailure,deleteUserStart,deleteUserSuccess } from "../redux/user/userSlice";
 import { useDispatch } from "react-redux"
+import {app} from '../firebase';
+import { useNavigate } from "react-router-dom";
+
 export default function Profile() {
   const { currentUser,loading,error } = useSelector((state) => state.user);
   const fileRef = useRef(null);
-
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: currentUser?.username || "",
     email: currentUser?.email || "",
@@ -44,6 +47,30 @@ export default function Profile() {
     setUpdateSuccess(true);
   }
 };
+const handleDeleteUser = async () => {
+  try {
+    dispatch(deleteUserStart());
+    const res = await fetch(`/api/user/delete/${currentUser._id}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+
+    const data = await res.json();
+    if (data.success === false) {
+      dispatch(deleteUserFailure(data.message));
+      return;
+    }
+
+    dispatch(deleteUserSuccess(data));
+
+    // ⭐ REDIRECT USER
+    navigate('/sign-up');
+
+  } catch (error) {
+    dispatch(deleteUserFailure(error.message));
+  }
+};
+
 
 
   return (
@@ -92,7 +119,7 @@ export default function Profile() {
       </form>
 
       <div className="flex justify-between mt-5">
-        <span className="text-red-700 cursor-pointer">Delete Account</span>
+        <span onClick={handleDeleteUser} className="text-red-700 cursor-pointer">Delete Account</span>
         <span className="text-red-700 cursor-pointer">Sign Out</span>
       </div>
      <p className="text-red-700 mt-5">{error ? error : ''}</p>
